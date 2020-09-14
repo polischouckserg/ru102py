@@ -13,11 +13,11 @@ from redisolar.api.site import SiteListResource
 from redisolar.api.site import SiteResource
 from redisolar.api.site_geo import SiteGeoListResource
 from redisolar.api.site_geo import SiteGeoResource
-from redisolar.core.connections import get_redis_connection
+from redisolar.core.connections import get_redis_timeseries_connection
 from redisolar.dao.redis import CapacityReportDaoRedis
 from redisolar.dao.redis import FeedDaoRedis
 from redisolar.dao.redis import MeterReadingDaoRedis
-from redisolar.dao.redis import MetricDaoRedis
+from redisolar.dao.redis import MetricDaoRedisTimeseries
 from redisolar.dao.redis import SiteDaoRedis
 from redisolar.dao.redis import SiteGeoDaoRedis
 from redisolar.dao.redis.key_schema import KeySchema
@@ -28,8 +28,8 @@ api = Api(blueprint)
 
 def configure(app):
     key_schema = KeySchema(app.config['REDIS_KEY_PREFIX'])
-    redis_client = get_redis_connection(app.config['REDIS_HOST'],
-                                        app.config['REDIS_PORT'])
+    redis_client = get_redis_timeseries_connection(app.config['REDIS_HOST'],
+                                                   app.config['REDIS_PORT'])
 
     try:
         redis_client.ping()
@@ -43,30 +43,30 @@ def configure(app):
         api.add_resource(SiteGeoListResource,
                          '/sites',
                          resource_class_args=(SiteGeoDaoRedis(redis_client,
-                                                              key_schema), ))
+                                                              key_schema),))
         api.add_resource(SiteGeoResource,
                          '/sites/<int:site_id>',
                          resource_class_args=(SiteGeoDaoRedis(redis_client,
-                                                              key_schema), ))
+                                                              key_schema),))
     else:
         api.add_resource(SiteListResource,
                          '/sites',
-                         resource_class_args=(SiteDaoRedis(redis_client, key_schema), ))
+                         resource_class_args=(SiteDaoRedis(redis_client, key_schema),))
         api.add_resource(SiteResource,
                          '/sites/<int:site_id>',
-                         resource_class_args=(SiteDaoRedis(redis_client, key_schema), ))
+                         resource_class_args=(SiteDaoRedis(redis_client, key_schema),))
 
     api.add_resource(CapacityReportResource,
                      '/capacity',
                      resource_class_args=(CapacityReportDaoRedis(
-                         redis_client, key_schema), ))
+                         redis_client, key_schema),))
     api.add_resource(GlobalMeterReadingResource,
                      '/meter_readings',
                      resource_class_args=(MeterReadingDaoRedis(redis_client, key_schema),
                                           FeedDaoRedis(redis_client, key_schema)))
     api.add_resource(SiteMeterReadingResource,
                      '/meter_readings/<int:site_id>',
-                     resource_class_args=(FeedDaoRedis(redis_client, key_schema), ))
+                     resource_class_args=(FeedDaoRedis(redis_client, key_schema),))
     api.add_resource(MetricsResource,
                      '/metrics/<int:site_id>',
-                     resource_class_args=(MetricDaoRedis(redis_client, key_schema), ))
+                     resource_class_args=(MetricDaoRedisTimeseries(redis_client, key_schema),))
